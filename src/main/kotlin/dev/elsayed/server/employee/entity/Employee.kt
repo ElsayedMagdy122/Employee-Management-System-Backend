@@ -1,47 +1,29 @@
 package dev.elsayed.server.employee.entity
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.PastOrPresent
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Size
-import org.jetbrains.annotations.NotNull
+import jakarta.persistence.*
+import org.hibernate.annotations.UuidGenerator
 import java.time.LocalDate
 import java.util.*
 
+@Entity
+@Table(name = "employee")
 data class Employee(
-    val id: UUID = UUID.randomUUID(),
-    @field:JsonProperty("department_id")
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @UuidGenerator
+    val id: UUID? = null,
+    @Column(name = "department_id")
     val departmentId: UUID = UUID.randomUUID(),
-
-    @field:NotNull("first name is required")
-    @field:JsonProperty("first_name")
+    @Column(name = "first_name", nullable = false, length = 100)
     val firstName: String,
-
-    @field:NotNull("last name is required")
-    @field:JsonProperty("last_name")
+    @Column(name = "last_name", nullable = false, length = 100)
     val lastName: String,
-
-    @field:NotNull("email is required")
-    @field:Email(
-        regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
-        message = "Invalid email format"
-    )
+    @Column(name = "email", nullable = false, length = 50, unique = true)
     val email: String,
-
-    @field:NotNull("phone number is required")
-    @field:Pattern(
-        regexp = "^\\+?[0-9]\\d{7,15}$",
-        message = "Invalid phone number format"
-    )
-    @field:JsonProperty("phone_number")
+    @Column(name = "phone_number", nullable = false, length = 20)
     val phoneNumber: String,
-
-    @field:NotNull("position is required")
-    @field:Size(min = 8, max = 80, message = "min is 8 characters and max is 80 characters")
+    @Column(name = "position", nullable = false, length = 50)
     val position: String,
-
-    @field:PastOrPresent(message = "Hire date cannot be in the future")
-    @field:JsonProperty("hire_date")
+    @Column(name = "hire_date")
     val hireDate: LocalDate = LocalDate.now()
 )
