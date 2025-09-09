@@ -1,8 +1,10 @@
 package dev.elsayed.server.employee.controller
 
-import dev.elsayed.server.employee.entity.Employee
-import dev.elsayed.server.employee.shared.EmployeeAlreadyExistsException
-import dev.elsayed.server.employee.shared.EmployeeNotFoundException
+import dev.elsayed.server.employee.dto.EmployeeCreateDto
+import dev.elsayed.server.employee.dto.EmployeeUpdateDto
+import dev.elsayed.server.employee.dto.toModel
+import dev.elsayed.server.employee.service.EmployeeService
+import dev.elsayed.server.employee.shared.GlobalResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,44 +13,66 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/employees")
-class EmployeeController {
-    val employees = mutableListOf<Employee>()
+class EmployeeController(private val employeeService: EmployeeService) {
 
     @GetMapping
-    fun findAll(): ResponseEntity<List<Employee>> {
-        return ResponseEntity(employees, HttpStatus.OK)
-    }
+    fun findAll() =
+        ResponseEntity.ok(
+            GlobalResponse(
+                status = resolveStatus(HttpStatus.OK),
+                message = "Employees retrieved successfully",
+                data = employeeService.getAllEmployees()
+            )
+        )
 
     @GetMapping("/{id}")
-    fun findOne(@PathVariable id: UUID): ResponseEntity<Employee> {
-        val employee = employees.find { it.id == id }
-            ?: throw EmployeeNotFoundException(id.toString())
-        return ResponseEntity(employee, HttpStatus.OK)
-    }
+    fun findOne(@PathVariable id: UUID) =
+        ResponseEntity(
+            GlobalResponse(
+                status = resolveStatus(HttpStatus.OK),
+                message = "Employee retrieved successfully",
+                data = employeeService.getEmployeeById(id)
+            ),
+            HttpStatus.OK
+        )
+
 
     @PostMapping
-    fun create(@RequestBody @Valid employee: Employee): ResponseEntity<Employee> {
-        if (employees.any { it.email == employee.email }) {
-            throw EmployeeAlreadyExistsException(employee.email)
-        }
-        employees.add(employee)
-        return ResponseEntity(employee, HttpStatus.CREATED)
-    }
+    fun create(@RequestBody @Valid employee: EmployeeCreateDto) = ResponseEntity(
+        GlobalResponse(
+            status = resolveStatus(HttpStatus.CREATED),
+            message = "Employee created successfully",
+            data = employeeService.createEmployee(employee.toModel())
+        ),
+        HttpStatus.CREATED
+    )
+
 
     @PutMapping("/{id}")
-    fun update(@PathVariable id: UUID, @RequestBody @Valid employee: Employee): ResponseEntity<Employee> {
-        val index = employees.indexOfFirst { it.id == id }
-        if (index == -1) throw EmployeeNotFoundException(id.toString())
+    fun update(
+        @PathVariable id: UUID,
+        @RequestBody @Valid employee: EmployeeUpdateDto
+    ) = ResponseEntity(
+        GlobalResponse(
+            status = resolveStatus(HttpStatus.OK),
+            message = "Employee updated successfully",
+            data = employeeService.updateEmployee(id, employee.toModel())
+        ),
+        HttpStatus.OK
+    )
 
-        val updatedEmployee = employee.copy(id = id, departmentId = employees[index].departmentId)
-        employees[index] = updatedEmployee
-        return ResponseEntity(updatedEmployee, HttpStatus.OK)
-    }
 
     @DeleteMapping("/{id}")
-    fun deleteOne(@PathVariable id: UUID): ResponseEntity<Unit> {
-        val removed = employees.removeIf { it.id == id }
-        if (!removed) throw EmployeeNotFoundException(id.toString())
-        return ResponseEntity(HttpStatus.NO_CONTENT)
+    fun deleteOne(@PathVariable id: UUID) = ResponseEntity(
+        GlobalResponse(
+            status = resolveStatus(HttpStatus.NO_CONTENT),
+            message = "Employee deleted successfully",
+            data = employeeService.deleteEmployee(id)
+        ),
+        HttpStatus.NO_CONTENT
+    )
+
+    fun resolveStatus(httpStatus: HttpStatus): String {
+        return if (httpStatus.is2xxSuccessful) "success" else "error"
     }
 }
